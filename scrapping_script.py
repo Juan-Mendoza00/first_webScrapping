@@ -1,8 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
-# import pymysql
+import pymysql
 
-from functions import get_us_price, get_pub_date
+from functions import get_usdprice_and_date
 
 # Dolar Blue price
 print('Obteniendo precio de Dolar Blue...')
@@ -24,7 +24,6 @@ html_content = response.content
 soup = BeautifulSoup(html_content, 'html.parser')
 title_tags = soup.find_all("h3", class_='product-title')
 
-# Lists to keep data scrapped
 table = []
 error_table = []
 # Loop over every tag obtained
@@ -40,12 +39,9 @@ for tag in title_tags:
     price = float(price[1:].replace(".","").replace(",","."))
     try:
         # Function to get usd price within every book's window
-        usd_price = get_us_price(url)
+        usd_price, pub_date = get_usdprice_and_date(url)
         usd_price = float(usd_price.replace(",","."))
         blue_price = round(price / dolarBlue_price, 2)
-        # Function to get publication date
-        pub_date = get_pub_date(url)
-
         table.append(
             (title, url, price, usd_price, blue_price, pub_date))
     except:
@@ -56,4 +52,19 @@ for tag in title_tags:
         )
 print('Libros scrapeados exitosamente:', len(table))
 print('Libros no scrapeados:', len(error_table))
-print(table[:6])
+
+# Creating MySQL connection
+connection = pymysql.Connection(
+    host='localhost',
+    user='juancml',
+    passwd='',
+    database='libros'
+)
+# creating mysql cursor
+cursor = connection.cursor()
+query = """ INSEERT INTO libros_semana 
+            VALUES (%s,%s,%s,%s,%s,%s, CURRDATE()) """
+# Inserting data
+cursor.executemany(query, table)
+if len(error_table) > 0:
+    cursor.executemany("INSERT INTO auditoria_errores VALUES(%s,%s)", error_table)
