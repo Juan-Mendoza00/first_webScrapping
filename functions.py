@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from time import sleep
+from datetime import datetime
 
 
 def get_usdprice_and_date(url = str) -> tuple:
@@ -25,6 +26,12 @@ def get_usdprice_and_date(url = str) -> tuple:
         .find_next_sibling('td').p.string
     )
     return us_price, fecha
+
+def format_date(date=str, old_format=str, new_format: str='d%/%m/%Y'):
+    """Changes date format and returns it as a string."""
+    obj_date = datetime.strptime(date, old_format)
+    return obj_date.strftime(new_format)
+
 
 # def get_pub_date(url = str):
 #     '''
